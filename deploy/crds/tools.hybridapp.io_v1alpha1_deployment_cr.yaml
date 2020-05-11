@@ -1,0 +1,16 @@
+apiVersion: tools.hybridapp.io/v1alpha1
+kind: Deployment
+metadata:
+  name: example-deployment
+spec:
+  core:
+    deployable:
+      enabled: true
+  tools:
+    assembler:
+      enabled: true
+    discoverer:
+      enabled: false
+      clustername: toronto
+      clusternamespace: toronto-ns
+
