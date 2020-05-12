@@ -35,6 +35,10 @@ spec:
               properties:
                 deployable:
                   properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
                     command:
                       items:
                         type: string
@@ -51,6 +55,10 @@ spec:
               properties:
                 assembler:
                   properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
                     command:
                       items:
                         type: string
@@ -64,6 +72,10 @@ spec:
                   type: object
                 discoverer:
                   properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
                     clustername:
                       type: string
                     clusternamespace:
@@ -74,6 +86,26 @@ spec:
                       type: array
                     enabled:
                       type: boolean
+                    hubconfig:
+                      properties:
+                        kubeconfig:
+                          type: string
+                        mountpath:
+                          type: string
+                        secretRef:
+                          description: LocalObjectReference contains enough information
+                            to let you locate the referenced object inside the same
+                            namespace.
+                          properties:
+                            name:
+                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                TODO: Add other useful fields. apiVersion, kind, uid?'
+                              type: string
+                          type: object
+                      required:
+                      - mountpath
+                      - secretRef
+                      type: object
                     image:
                       type: string
                     name:

@@ -24,6 +24,7 @@ type GenericContainerSpec struct {
 	Name    *string  `json:"name,omitempty"`
 	Image   *string  `json:"image,omitempty"`
 	Command []string `json:"command,omitempty"`
+	Args    []string `json:"args,omitempty"`
 }
 
 var (
@@ -61,17 +62,27 @@ var (
 	DefaultDiscovererContainerName    = "discoverer"
 	DefaultDiscovererContainerImage   = "quay.io/hybridappio/ham-resource-discoverer"
 	DefaultDiscovererContainerCommand = []string{"ham-resource-discoverer"}
+
+	DefaultPodVolumeNameHubConnection = "hub-connection-config"
 )
 
 var (
 	ContainerEnvVarKeyCLUSTERNAME      = "CLUSTERNAME"
 	ContainerEnvVarKeyCLUSTERNAMESPACE = "CLUSTERNAMESPACE"
+	ContainerEnvVarKeyKUBECONFIG       = "KUBECONFIG"
 )
+
+type HubConnectionConfig struct {
+	KubeConfig *string                     `json:"kubeconfig,omitempty"`
+	MountPath  string                      `json:"mountpath"`
+	SecretRef  corev1.LocalObjectReference `json:"secretRef"`
+}
 
 type ResourceDiscovererSpec struct {
 	GenericContainerSpec `json:",inline"`
-	ClusterName          string `json:"clustername"`
-	ClusterNamespace     string `json:"clusternamespace"`
+	ClusterName          string               `json:"clustername"`
+	ClusterNamespace     string               `json:"clusternamespace"`
+	HubConnectionConfig  *HubConnectionConfig `json:"hubconfig,omitempty"`
 }
 
 type CoreSpec struct {
