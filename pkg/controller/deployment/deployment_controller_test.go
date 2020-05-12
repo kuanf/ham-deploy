@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +39,11 @@ var (
 		Name:      "test",
 		Namespace: "default",
 	}
+
+	defaultContainerNumber = 2
+	single                 = 1
+	falsevalue             = false
+	truevalue              = true
 )
 
 func TestReconcile(t *testing.T) {
@@ -76,6 +82,7 @@ func TestReconcile(t *testing.T) {
 
 	time.Sleep(interval)
 	g.Expect(c.Get(context.TODO(), podKey, pod)).To(Succeed())
+	g.Expect(len(pod.Spec.Containers) == defaultContainerNumber).To(BeTrue())
 
 	// delete pod should trigger recreation
 	g.Expect(c.Delete(context.TODO(), pod)).To(Succeed())
@@ -92,6 +99,84 @@ func TestReconcile(t *testing.T) {
 
 	// test api server does not respect delete by ownerreference, so pod won't be automatically deleted
 	// can only test delete pod after deploy wont trigger recreation
+	g.Expect(c.Delete(context.TODO(), pod)).To(Succeed())
+	time.Sleep(interval)
+
+	err = c.Get(context.TODO(), podKey, pod)
+	g.Expect(errors.IsNotFound(err)).To(BeTrue())
+}
+
+func TestDiscoverer(t *testing.T) {
+	g := NewWithT(t)
+
+	var c client.Client
+
+	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
+	// channel when it is finished.
+	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: "0"})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	c = mgr.GetClient()
+
+	rec := newReconciler(mgr)
+	g.Expect(add(mgr, rec)).To(Succeed())
+
+	stopMgr, mgrStopped := StartTestManager(mgr, g)
+
+	defer func() {
+		close(stopMgr)
+		mgrStopped.Wait()
+	}()
+
+	// disable deployable container and assembler container to focus on discoverer
+	deploy := &toolsv1alpha1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      request.Name,
+			Namespace: request.Namespace,
+		},
+		Spec: toolsv1alpha1.DeploymentSpec{
+			CoreSpec: &toolsv1alpha1.CoreSpec{
+				DeployableOperatorSpec: &toolsv1alpha1.DeployableOperatorSpec{
+					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+						Enabled: &falsevalue,
+					},
+				},
+			},
+			ToolsSpec: &toolsv1alpha1.ToolsSpec{
+				ApplicationAssemblerSpec: &toolsv1alpha1.ApplicationAssemblerSpec{
+					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+						Enabled: &falsevalue,
+					},
+				},
+				ResourceDiscovererSpec: &toolsv1alpha1.ResourceDiscovererSpec{
+					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+						Enabled: &truevalue,
+					},
+				},
+			},
+		},
+	}
+
+	g.Expect(c.Create(context.TODO(), deploy)).To(Succeed())
+
+	pod := &corev1.Pod{}
+	podKey := types.NamespacedName{
+		Name:      request.Name + "-pod",
+		Namespace: request.Namespace,
+	}
+
+	time.Sleep(interval)
+	g.Expect(c.Get(context.TODO(), podKey, pod)).To(Succeed())
+	g.Expect(len(pod.Spec.Containers) == single).To(BeTrue())
+
+	// delete the deploy first
+	g.Expect(c.Get(context.TODO(), request, deploy)).To(Succeed())
+	g.Expect(c.Delete(context.TODO(), deploy)).To(Succeed())
+	time.Sleep(interval)
+
+	err = c.Get(context.TODO(), request, deploy)
+	g.Expect(errors.IsNotFound(err)).To(BeTrue())
+
 	g.Expect(c.Delete(context.TODO(), pod)).To(Succeed())
 	time.Sleep(interval)
 

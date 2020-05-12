@@ -16,9 +16,9 @@ package deployment
 
 import (
 	"context"
+	"reflect"
 
 	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
-	"github.com/hybridapp-io/ham-deploy/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -145,10 +145,7 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// Pod already exists - try to update
-	uptodate := true
-	if !isEqualPod(found, pod) {
-		uptodate = false
-	}
+	uptodate := isEqualPod(found, pod)
 
 	if !uptodate {
 		err = r.client.Delete(context.TODO(), found)
@@ -166,8 +163,7 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
 	return reconcile.Result{}, err
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func (r *ReconcileDeployment) newPodForCR(cr *toolsv1alpha1.Deployment) *corev1.Pod {
+func (r *ReconcileDeployment) createBasicPod(cr *toolsv1alpha1.Deployment) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -186,112 +182,177 @@ func (r *ReconcileDeployment) newPodForCR(cr *toolsv1alpha1.Deployment) *corev1.
 		}
 	}
 
-	containers := []corev1.Container{}
+	return pod
+}
+
+func (r *ReconcileDeployment) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, pod *corev1.Pod) *corev1.Pod {
+	var exists, implied bool
 
 	// add deployable container unless spec.CoreSpec.DeployableOperatorSpec.Enabled = false
-	exists := cr.Spec.CoreSpec == nil || cr.Spec.CoreSpec.DeployableOperatorSpec == nil || cr.Spec.CoreSpec.DeployableOperatorSpec.Enabled == nil
-	if exists || *(cr.Spec.CoreSpec.DeployableOperatorSpec.Enabled) {
-		envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-		envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-		envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultDeployableContainerName}
+	exists = spec != nil && spec.DeployableOperatorSpec != nil
+	implied = spec == nil || spec.DeployableOperatorSpec == nil || spec.DeployableOperatorSpec.Enabled == nil
 
-		ctn := corev1.Container{
-			Name:    toolsv1alpha1.DefaultDeployableContainerName,
-			Image:   toolsv1alpha1.DefaultDeployableContainerImage,
-			Command: toolsv1alpha1.DefaultDeployableContainerCommand,
-			Env: []corev1.EnvVar{
-				envwatchns,
-				envpn,
-				envon,
-			},
+	if implied || *(spec.DeployableOperatorSpec.Enabled) {
+		var dospec *toolsv1alpha1.DeployableOperatorSpec
+
+		if exists {
+			dospec = spec.DeployableOperatorSpec
+		} else {
+			dospec = &toolsv1alpha1.DeployableOperatorSpec{}
 		}
 
-		// install crds for deployable operator if missing
-		_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdDeployableSubPath)
-
-		// apply new values from cr if not nil
-		containers = append(containers, ctn)
+		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateDeployableContainer(dospec, pod))
 	}
 
-	// add assembler container unless spec.ToolsSpec.ApplicationAssemblerSpec.Enabled = false
-	exists = cr.Spec.ToolsSpec == nil || cr.Spec.ToolsSpec.ApplicationAssemblerSpec == nil || cr.Spec.ToolsSpec.ApplicationAssemblerSpec.Enabled == nil
-	if exists || *(cr.Spec.ToolsSpec.ApplicationAssemblerSpec.Enabled) {
-		envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-		envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-		envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultAssemblerContainerName}
+	return pod
+}
 
-		ctn := corev1.Container{
-			Name:    toolsv1alpha1.DefaultAssemblerContainerName,
-			Image:   toolsv1alpha1.DefaultAssemblerContainerImage,
-			Command: toolsv1alpha1.DefaultAssemblerContainerCommand,
-			Env: []corev1.EnvVar{
-				envwatchns,
-				envpn,
-				envon,
-			},
+func (r *ReconcileDeployment) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, pod *corev1.Pod) *corev1.Pod {
+	var exists, implied bool
+
+	// add assembler container unless spec.ToolsSpec.ApplicationAssemblerSpec.Enabled = false
+	exists = spec != nil && spec.ApplicationAssemblerSpec != nil
+	implied = spec == nil || spec.ApplicationAssemblerSpec == nil || spec.ApplicationAssemblerSpec.Enabled == nil
+
+	if implied || *(spec.ApplicationAssemblerSpec.Enabled) {
+		var aaspec *toolsv1alpha1.ApplicationAssemblerSpec
+
+		if exists {
+			aaspec = spec.ApplicationAssemblerSpec
+		} else {
+			aaspec = &toolsv1alpha1.ApplicationAssemblerSpec{}
 		}
 
-		// install crds for deployable operator if missing
-		_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdAssemblerSubPath)
-
-		// apply new values from cr if not nil
-		containers = append(containers, ctn)
+		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateAssemblerContainer(aaspec, pod))
 	}
 
 	// add discoverer container only if spec.ToolsSpec.ResourceDiscovererSpec.Enabled =
-	exists = cr.Spec.ToolsSpec != nil && cr.Spec.ToolsSpec.ResourceDiscovererSpec != nil && cr.Spec.ToolsSpec.ResourceDiscovererSpec.Enabled != nil
-	if exists && *(cr.Spec.ToolsSpec.ResourceDiscovererSpec.Enabled) {
-		envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-		envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-		envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultDiscovererContainerName}
+	exists = spec != nil && spec.ResourceDiscovererSpec != nil && spec.ResourceDiscovererSpec.Enabled != nil
 
-		envcn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyCLUSTERNAME, Value: cr.Spec.ToolsSpec.ResourceDiscovererSpec.ClusterName}
-		envcns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyCLUSTERNAMESPACE, Value: cr.Spec.ToolsSpec.ResourceDiscovererSpec.ClusterNamespace}
+	if exists && *(spec.ResourceDiscovererSpec.Enabled) {
+		rdspec := spec.ResourceDiscovererSpec
 
-		ctn := corev1.Container{
-			Name:    toolsv1alpha1.DefaultDiscovererContainerName,
-			Image:   toolsv1alpha1.DefaultDiscovererContainerImage,
-			Command: toolsv1alpha1.DefaultDiscovererContainerCommand,
-			Env: []corev1.EnvVar{
-				envwatchns,
-				envpn,
-				envon,
-				envcn,
-				envcns,
-			},
-		}
-
-		// install crds for deployable operator if missing
-		_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdDiscovererSubPath)
-
-		// apply new values from cr if not nil
-		containers = append(containers, ctn)
+		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateDiscovererContainer(rdspec, pod))
 	}
 
-	pod.Spec.Containers = containers
+	return pod
+}
+
+// newPodForCR returns a busybox pod with the same name/namespace as the cr
+func (r *ReconcileDeployment) newPodForCR(cr *toolsv1alpha1.Deployment) *corev1.Pod {
+	pod := r.createBasicPod(cr)
+
+	pod = r.configPodByCoreSpec(cr.Spec.CoreSpec, pod)
+	pod = r.configPodByToolsSpec(cr.Spec.ToolsSpec, pod)
 
 	return pod
 }
 
 func isEqualPod(oldpod, newpod *corev1.Pod) bool {
-	oldimages := make(map[string]string)
+	if !isEqualVolumes(oldpod.Spec.Volumes, newpod.Spec.Volumes) {
+		return false
+	}
 
+	// compare containers
+	oldctnmap := make(map[string]*corev1.Container)
 	for _, ctn := range oldpod.Spec.Containers {
-		oldimages[ctn.Name] = ctn.Image
+		oldctnmap[ctn.Name] = ctn.DeepCopy()
 	}
 
 	for _, ctn := range newpod.Spec.Containers {
-		oimg, ok := oldimages[ctn.Name]
+		octn, ok := oldctnmap[ctn.Name]
 		if !ok {
 			return false
 		}
 
-		if oimg != ctn.Image {
+		if !isEqualContainer(octn, ctn.DeepCopy()) {
 			return false
 		}
 
-		delete(oldimages, ctn.Name)
+		delete(oldctnmap, ctn.Name)
 	}
 
-	return len(oldimages) == 0
+	return len(oldctnmap) == 0
+}
+
+func isEqualVolumes(oldvols, newvols []corev1.Volume) bool {
+	// compare volumns
+	volmap := make(map[string]*corev1.Volume)
+	for _, vol := range oldvols {
+		volmap[vol.Name] = vol.DeepCopy()
+	}
+
+	for _, vol := range newvols {
+		if oldvol, ok := volmap[vol.Name]; !ok {
+			return false
+		} else if !reflect.DeepEqual(oldvol, vol) {
+			return false
+		}
+
+		delete(volmap, vol.Name)
+	}
+
+	return len(volmap) == 0
+}
+
+func isEqualContainer(oldctn, newctn *corev1.Container) bool {
+	if (oldctn == newctn) || (oldctn == nil && newctn == nil) {
+		return true
+	}
+
+	if oldctn == nil || newctn == nil {
+		return false
+	}
+
+	if oldctn.Name != newctn.Name {
+		return false
+	}
+
+	if oldctn.Image != newctn.Image {
+		return false
+	}
+
+	if !isEqualStringArray(oldctn.Command, newctn.Command) {
+		return false
+	}
+
+	volmtmap := make(map[string]*corev1.VolumeMount)
+	for _, volm := range oldctn.VolumeMounts {
+		volmtmap[volm.Name] = volm.DeepCopy()
+	}
+
+	for _, volm := range newctn.VolumeMounts {
+		if oldvolm, ok := volmtmap[volm.Name]; !ok {
+			return false
+		} else if !reflect.DeepEqual(oldvolm, volm) {
+			return false
+		}
+	}
+
+	return isEqualStringArray(oldctn.Args, newctn.Args)
+}
+
+func isEqualStringArray(sa1, sa2 []string) bool {
+	if sa1 == nil && sa2 == nil {
+		return true
+	}
+
+	if sa1 == nil || sa2 == nil {
+		return false
+	}
+
+	samap1 := make(map[string]string)
+	for _, s := range sa1 {
+		samap1[s] = s
+	}
+
+	for _, s := range sa2 {
+		if _, ok := samap1[s]; !ok {
+			return false
+		}
+
+		delete(samap1, s)
+	}
+
+	return len(samap1) == 0
 }
