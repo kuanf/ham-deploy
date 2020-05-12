@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deployment
+package operator
 
 import (
 	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (r *ReconcileDeployment) configContainerByGenericSpec(spec *toolsv1alpha1.GenericContainerSpec, ctn *corev1.Container) *corev1.Container {
+func (r *ReconcileOperator) configContainerByGenericSpec(spec *toolsv1alpha1.GenericContainerSpec, ctn *corev1.Container) *corev1.Container {
 	if spec == nil {
 		return ctn
 	}
@@ -45,7 +45,7 @@ func (r *ReconcileDeployment) configContainerByGenericSpec(spec *toolsv1alpha1.G
 	return ctn
 }
 
-func (r *ReconcileDeployment) generateDeployableContainer(spec *toolsv1alpha1.DeployableOperatorSpec, pod *corev1.Pod) *corev1.Container {
+func (r *ReconcileOperator) generateDeployableContainer(spec *toolsv1alpha1.DeployableOperatorSpec, pod *corev1.Pod) *corev1.Container {
 	if spec == nil {
 		return nil
 	}
@@ -73,7 +73,7 @@ func (r *ReconcileDeployment) generateDeployableContainer(spec *toolsv1alpha1.De
 	return ctn
 }
 
-func (r *ReconcileDeployment) generateAssemblerContainer(spec *toolsv1alpha1.ApplicationAssemblerSpec, pod *corev1.Pod) *corev1.Container {
+func (r *ReconcileOperator) generateAssemblerContainer(spec *toolsv1alpha1.ApplicationAssemblerSpec, pod *corev1.Pod) *corev1.Container {
 	envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
 	envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
 	envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultAssemblerContainerName}
@@ -97,7 +97,7 @@ func (r *ReconcileDeployment) generateAssemblerContainer(spec *toolsv1alpha1.App
 	return ctn
 }
 
-func (r *ReconcileDeployment) generateDiscovererContainer(spec *toolsv1alpha1.ResourceDiscovererSpec, pod *corev1.Pod) *corev1.Container {
+func (r *ReconcileOperator) generateDiscovererContainer(spec *toolsv1alpha1.ResourceDiscovererSpec, pod *corev1.Pod) *corev1.Container {
 	envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
 	envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
 	envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultDiscovererContainerName}
