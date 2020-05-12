@@ -1,7 +1,7 @@
 apiVersion: tools.hybridapp.io/v1alpha1
 kind: Deployment
 metadata:
-  name: example-deployment
+  name: simple
 spec:
   core:
     deployable:

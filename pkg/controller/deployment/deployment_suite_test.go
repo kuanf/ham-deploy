@@ -36,6 +36,9 @@ func TestMain(m *testing.M) {
 	t := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "deploy", "crds"),
+			filepath.Join("..", "..", "..", "deploy", "crds", "core", "deployable"),
+			filepath.Join("..", "..", "..", "deploy", "crds", "tools", "assembler"),
+			filepath.Join("..", "..", "..", "deploy", "crds", "tools", "discoverer"),
 			filepath.Join("..", "..", "..", "hack", "test"),
 		},
 	}

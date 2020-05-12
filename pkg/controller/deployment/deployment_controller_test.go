@@ -31,7 +31,7 @@ import (
 	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
 )
 
-const interval = time.Second * 2
+const interval = time.Second * 1
 
 var (
 	request = types.NamespacedName{
@@ -82,7 +82,6 @@ func TestReconcile(t *testing.T) {
 	time.Sleep(interval)
 	g.Expect(c.Get(context.TODO(), podKey, pod)).To(Succeed())
 
-	// test api server does not respect delete by ownerreference, have to test this way
 	// delete the deploy first
 	g.Expect(c.Get(context.TODO(), request, deploy)).To(Succeed())
 	g.Expect(c.Delete(context.TODO(), deploy)).To(Succeed())
@@ -91,7 +90,8 @@ func TestReconcile(t *testing.T) {
 	err = c.Get(context.TODO(), request, deploy)
 	g.Expect(errors.IsNotFound(err)).To(BeTrue())
 
-	// now it can be deleted
+	// test api server does not respect delete by ownerreference, so pod won't be automatically deleted
+	// can only test delete pod after deploy wont trigger recreation
 	g.Expect(c.Delete(context.TODO(), pod)).To(Succeed())
 	time.Sleep(interval)
 
