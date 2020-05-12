@@ -31,7 +31,7 @@ import (
 	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
 )
 
-const interval = time.Second * 1
+const interval = time.Second * 2
 
 var (
 	request = types.NamespacedName{
