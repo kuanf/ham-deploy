@@ -130,7 +130,7 @@ func (r *ReconcileDeployment) generateDiscovererContainer(spec *toolsv1alpha1.Re
 		// kubeconfig
 		if spec.HubConnectionConfig.KubeConfig != nil {
 			envkc := corev1.EnvVar{
-				Name:  toolsv1alpha1.ContainerEnvVarKeyKUBECONFIG,
+				Name:  toolsv1alpha1.ContainerEnvVarKeyHUBKUBECONFIG,
 				Value: *spec.HubConnectionConfig.KubeConfig,
 			}
 			ctn.Env = append(ctn.Env, envkc)

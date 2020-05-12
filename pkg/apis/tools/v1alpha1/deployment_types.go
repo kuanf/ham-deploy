@@ -69,7 +69,7 @@ var (
 var (
 	ContainerEnvVarKeyCLUSTERNAME      = "CLUSTERNAME"
 	ContainerEnvVarKeyCLUSTERNAMESPACE = "CLUSTERNAMESPACE"
-	ContainerEnvVarKeyKUBECONFIG       = "KUBECONFIG"
+	ContainerEnvVarKeyHUBKUBECONFIG    = "HUBCLUSTERCONFIGFILE"
 )
 
 type HubConnectionConfig struct {
