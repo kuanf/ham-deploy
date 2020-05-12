@@ -1,5 +1,5 @@
 apiVersion: tools.hybridapp.io/v1alpha1
-kind: Deployment
+kind: Operator
 metadata:
   name: simple
 spec:

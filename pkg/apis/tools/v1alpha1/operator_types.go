@@ -94,39 +94,39 @@ type ToolsSpec struct {
 	ResourceDiscovererSpec   *ResourceDiscovererSpec   `json:"discoverer,omitempty"`
 }
 
-// DeploymentSpec defines the desired state of Deployment
-type DeploymentSpec struct {
+// OperatorSpec defines the desired state of Operator
+type OperatorSpec struct {
 	CoreSpec  *CoreSpec  `json:"core,omitempty"`
 	ToolsSpec *ToolsSpec `json:"tools,omitempty"`
 }
 
-// DeploymentStatus defines the observed state of Deployment
-type DeploymentStatus struct {
+// OperatorStatus defines the observed state of Operator
+type OperatorStatus struct {
 	corev1.PodStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Deployment is the Schema for the deployments API
+// Operator is the Schema for the operators API
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=deployments,scope=Namespaced
-type Deployment struct {
+// +kubebuilder:resource:path=operators,scope=Namespaced
+type Operator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DeploymentSpec   `json:"spec,omitempty"`
-	Status DeploymentStatus `json:"status,omitempty"`
+	Spec   OperatorSpec   `json:"spec,omitempty"`
+	Status OperatorStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// DeploymentList contains a list of Deployment
-type DeploymentList struct {
+// OperatorList contains a list of Operator
+type OperatorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Deployment `json:"items"`
+	Items           []Operator `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Deployment{}, &DeploymentList{})
+	SchemeBuilder.Register(&Operator{}, &OperatorList{})
 }
