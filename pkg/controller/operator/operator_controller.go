@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deployment
+package operator
 
 import (
 	"context"
@@ -49,7 +49,7 @@ const (
 * business logic.  Delete these comments after modifying this file.*
  */
 
-// Add creates a new Deployment Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new Operator Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
@@ -57,7 +57,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileDeployment{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileOperator{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -68,16 +68,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for changes to primary resource Deployment
-	err = c.Watch(&source.Kind{Type: &toolsv1alpha1.Deployment{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource Operator
+	err = c.Watch(&source.Kind{Type: &toolsv1alpha1.Operator{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to secondary resource Pods and requeue the owner Deployment
+	// Watch for changes to secondary resource Pods and requeue the owner Operator
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &toolsv1alpha1.Deployment{},
+		OwnerType:    &toolsv1alpha1.Operator{},
 	})
 	if err != nil {
 		return err
@@ -86,24 +86,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-// blank assignment to verify that ReconcileDeployment implements reconcile.Reconciler
-var _ reconcile.Reconciler = &ReconcileDeployment{}
+// blank assignment to verify that ReconcileOperator implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileOperator{}
 
-// ReconcileDeployment reconciles a Deployment object
-type ReconcileDeployment struct {
+// ReconcileOperator reconciles a Operator object
+type ReconcileOperator struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a Deployment object and makes changes based on the state read
-// and what is in the Deployment.Spec
-func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	klog.Info("Reconciling Deployment: ", request)
+// Reconcile reads that state of the cluster for a Operator object and makes changes based on the state read
+// and what is in the Operator.Spec
+func (r *ReconcileOperator) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	klog.Info("Reconciling Operator: ", request)
 
-	// Fetch the Deployment instance
-	instance := &toolsv1alpha1.Deployment{}
+	// Fetch the Operator instance
+	instance := &toolsv1alpha1.Operator{}
 
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
@@ -120,7 +120,7 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
 	// Define a new Pod object
 	pod := r.newPodForCR(instance)
 
-	// Set Deployment instance as the owner and controller
+	// Set Operator instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -163,7 +163,7 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
 	return reconcile.Result{}, err
 }
 
-func (r *ReconcileDeployment) createBasicPod(cr *toolsv1alpha1.Deployment) *corev1.Pod {
+func (r *ReconcileOperator) createBasicPod(cr *toolsv1alpha1.Operator) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -185,7 +185,7 @@ func (r *ReconcileDeployment) createBasicPod(cr *toolsv1alpha1.Deployment) *core
 	return pod
 }
 
-func (r *ReconcileDeployment) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, pod *corev1.Pod) *corev1.Pod {
+func (r *ReconcileOperator) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, pod *corev1.Pod) *corev1.Pod {
 	var exists, implied bool
 
 	// add deployable container unless spec.CoreSpec.DeployableOperatorSpec.Enabled = false
@@ -207,7 +207,7 @@ func (r *ReconcileDeployment) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, 
 	return pod
 }
 
-func (r *ReconcileDeployment) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, pod *corev1.Pod) *corev1.Pod {
+func (r *ReconcileOperator) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, pod *corev1.Pod) *corev1.Pod {
 	var exists, implied bool
 
 	// add assembler container unless spec.ToolsSpec.ApplicationAssemblerSpec.Enabled = false
@@ -239,7 +239,7 @@ func (r *ReconcileDeployment) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func (r *ReconcileDeployment) newPodForCR(cr *toolsv1alpha1.Deployment) *corev1.Pod {
+func (r *ReconcileOperator) newPodForCR(cr *toolsv1alpha1.Operator) *corev1.Pod {
 	pod := r.createBasicPod(cr)
 
 	pod = r.configPodByCoreSpec(cr.Spec.CoreSpec, pod)

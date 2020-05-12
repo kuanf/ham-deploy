@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deployment
+package operator
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func TestReconcile(t *testing.T) {
 		mgrStopped.Wait()
 	}()
 
-	deploy := &toolsv1alpha1.Deployment{}
+	deploy := &toolsv1alpha1.Operator{}
 	deploy.Name = request.Name
 	deploy.Namespace = request.Namespace
 
@@ -129,12 +129,12 @@ func TestDiscoverer(t *testing.T) {
 	}()
 
 	// disable deployable container and assembler container to focus on discoverer
-	deploy := &toolsv1alpha1.Deployment{
+	deploy := &toolsv1alpha1.Operator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      request.Name,
 			Namespace: request.Namespace,
 		},
-		Spec: toolsv1alpha1.DeploymentSpec{
+		Spec: toolsv1alpha1.OperatorSpec{
 			CoreSpec: &toolsv1alpha1.CoreSpec{
 				DeployableOperatorSpec: &toolsv1alpha1.DeployableOperatorSpec{
 					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{

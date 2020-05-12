@@ -15,10 +15,10 @@
 package controller
 
 import (
-	"github.com/hybridapp-io/ham-deploy/pkg/controller/deployment"
+	"github.com/hybridapp-io/ham-deploy/pkg/controller/operator"
 )
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, deployment.Add)
+	AddToManagerFuncs = append(AddToManagerFuncs, operator.Add)
 }
