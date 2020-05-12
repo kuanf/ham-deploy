@@ -36,7 +36,7 @@ const (
 func CheckAndInstallCRDs(client client.Client, pathname string) error {
 	err := filepath.Walk(pathname, func(path string, info os.FileInfo, err error) error {
 		klog.V(packageDetailLogLevel).Info("Working on ", path)
-		if !info.IsDir() && CheckAndInstallCRD(client, path) != nil {
+		if info != nil && !info.IsDir() && CheckAndInstallCRD(client, path) != nil {
 			return err
 		}
 		return nil

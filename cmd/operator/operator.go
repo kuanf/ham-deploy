@@ -152,8 +152,18 @@ func addMetrics(ctx context.Context, cfg *rest.Config) {
 
 	// Add to the below struct any other metrics ports you want to expose.
 	servicePorts := []corev1.ServicePort{
-		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: corev1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
-		{Port: operatorMetricsPort, Name: metrics.CRPortName, Protocol: corev1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: operatorMetricsPort}},
+		{
+			Port:       metricsPort,
+			Name:       metrics.OperatorPortName,
+			Protocol:   corev1.ProtocolTCP,
+			TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort},
+		},
+		{
+			Port:       operatorMetricsPort,
+			Name:       metrics.CRPortName,
+			Protocol:   corev1.ProtocolTCP,
+			TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: operatorMetricsPort},
+		},
 	}
 
 	// Create Service object to expose the metrics port(s).
