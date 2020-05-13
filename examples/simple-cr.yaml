@@ -1,4 +1,4 @@
-apiVersion: tools.hybridapp.io/v1alpha1
+apiVersion: deploy.hybridapp.io/v1alpha1
 kind: Operator
 metadata:
   name: simple

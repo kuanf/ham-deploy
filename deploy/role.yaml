@@ -22,3 +22,15 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - deploy.hybridapp.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

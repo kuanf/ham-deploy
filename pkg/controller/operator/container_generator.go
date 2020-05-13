@@ -15,12 +15,12 @@
 package operator
 
 import (
-	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
+	deployv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/deploy/v1alpha1"
 	"github.com/hybridapp-io/ham-deploy/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (r *ReconcileOperator) configContainerByGenericSpec(spec *toolsv1alpha1.GenericContainerSpec, ctn *corev1.Container) *corev1.Container {
+func (r *ReconcileOperator) configContainerByGenericSpec(spec *deployv1alpha1.GenericContainerSpec, ctn *corev1.Container) *corev1.Container {
 	if spec == nil {
 		return ctn
 	}
@@ -45,19 +45,19 @@ func (r *ReconcileOperator) configContainerByGenericSpec(spec *toolsv1alpha1.Gen
 	return ctn
 }
 
-func (r *ReconcileOperator) generateDeployableContainer(spec *toolsv1alpha1.DeployableOperatorSpec, pod *corev1.Pod) *corev1.Container {
+func (r *ReconcileOperator) generateDeployableContainer(spec *deployv1alpha1.DeployableOperatorSpec, pod *corev1.Pod) *corev1.Container {
 	if spec == nil {
 		return nil
 	}
 
-	envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-	envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-	envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultDeployableContainerName}
+	envwatchns := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
+	envpn := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
+	envon := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: deployv1alpha1.DefaultDeployableContainerName}
 
 	ctn := &corev1.Container{
-		Name:    toolsv1alpha1.DefaultDeployableContainerName,
-		Image:   toolsv1alpha1.DefaultDeployableContainerImage,
-		Command: toolsv1alpha1.DefaultDeployableContainerCommand,
+		Name:    deployv1alpha1.DefaultDeployableContainerName,
+		Image:   deployv1alpha1.DefaultDeployableContainerImage,
+		Command: deployv1alpha1.DefaultDeployableContainerCommand,
 		Env: []corev1.EnvVar{
 			envwatchns,
 			envpn,
@@ -73,15 +73,15 @@ func (r *ReconcileOperator) generateDeployableContainer(spec *toolsv1alpha1.Depl
 	return ctn
 }
 
-func (r *ReconcileOperator) generateAssemblerContainer(spec *toolsv1alpha1.ApplicationAssemblerSpec, pod *corev1.Pod) *corev1.Container {
-	envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-	envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-	envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultAssemblerContainerName}
+func (r *ReconcileOperator) generateAssemblerContainer(spec *deployv1alpha1.ApplicationAssemblerSpec, pod *corev1.Pod) *corev1.Container {
+	envwatchns := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
+	envpn := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
+	envon := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: deployv1alpha1.DefaultAssemblerContainerName}
 
 	ctn := &corev1.Container{
-		Name:    toolsv1alpha1.DefaultAssemblerContainerName,
-		Image:   toolsv1alpha1.DefaultAssemblerContainerImage,
-		Command: toolsv1alpha1.DefaultAssemblerContainerCommand,
+		Name:    deployv1alpha1.DefaultAssemblerContainerName,
+		Image:   deployv1alpha1.DefaultAssemblerContainerImage,
+		Command: deployv1alpha1.DefaultAssemblerContainerCommand,
 		Env: []corev1.EnvVar{
 			envwatchns,
 			envpn,
@@ -97,19 +97,19 @@ func (r *ReconcileOperator) generateAssemblerContainer(spec *toolsv1alpha1.Appli
 	return ctn
 }
 
-func (r *ReconcileOperator) generateDiscovererContainer(spec *toolsv1alpha1.ResourceDiscovererSpec, pod *corev1.Pod) *corev1.Container {
-	envwatchns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
-	envpn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
-	envon := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: toolsv1alpha1.DefaultDiscovererContainerName}
+func (r *ReconcileOperator) generateDiscovererContainer(spec *deployv1alpha1.ResourceDiscovererSpec, pod *corev1.Pod) *corev1.Container {
+	envwatchns := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyWATCHNAMESPACE, Value: ""}
+	envpn := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyPODNAME, Value: pod.Name}
+	envon := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyOPERATORNAME, Value: deployv1alpha1.DefaultDiscovererContainerName}
 
 	// apply required env var cluster name and cluster namespace
-	envcn := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyCLUSTERNAME, Value: spec.ClusterName}
-	envcns := corev1.EnvVar{Name: toolsv1alpha1.ContainerEnvVarKeyCLUSTERNAMESPACE, Value: spec.ClusterNamespace}
+	envcn := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyCLUSTERNAME, Value: spec.ClusterName}
+	envcns := corev1.EnvVar{Name: deployv1alpha1.ContainerEnvVarKeyCLUSTERNAMESPACE, Value: spec.ClusterNamespace}
 
 	ctn := &corev1.Container{
-		Name:    toolsv1alpha1.DefaultDiscovererContainerName,
-		Image:   toolsv1alpha1.DefaultDiscovererContainerImage,
-		Command: toolsv1alpha1.DefaultDiscovererContainerCommand,
+		Name:    deployv1alpha1.DefaultDiscovererContainerName,
+		Image:   deployv1alpha1.DefaultDiscovererContainerImage,
+		Command: deployv1alpha1.DefaultDiscovererContainerCommand,
 		Env: []corev1.EnvVar{
 			envwatchns,
 			envpn,
@@ -130,7 +130,7 @@ func (r *ReconcileOperator) generateDiscovererContainer(spec *toolsv1alpha1.Reso
 		// kubeconfig
 		if spec.HubConnectionConfig.KubeConfig != nil {
 			envkc := corev1.EnvVar{
-				Name:  toolsv1alpha1.ContainerEnvVarKeyHUBKUBECONFIG,
+				Name:  deployv1alpha1.ContainerEnvVarKeyHUBKUBECONFIG,
 				Value: *spec.HubConnectionConfig.KubeConfig,
 			}
 			ctn.Env = append(ctn.Env, envkc)
@@ -139,7 +139,7 @@ func (r *ReconcileOperator) generateDiscovererContainer(spec *toolsv1alpha1.Reso
 		if spec.HubConnectionConfig != nil {
 			// set up volume
 			secvol := corev1.Volume{
-				Name: toolsv1alpha1.DefaultPodVolumeNameHubConnection,
+				Name: deployv1alpha1.DefaultPodVolumeNameHubConnection,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: spec.HubConnectionConfig.SecretRef.Name,
