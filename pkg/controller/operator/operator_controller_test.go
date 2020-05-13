@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
+	deployv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/deploy/v1alpha1"
 )
 
 const interval = time.Second * 2
@@ -68,7 +68,7 @@ func TestReconcile(t *testing.T) {
 		mgrStopped.Wait()
 	}()
 
-	deploy := &toolsv1alpha1.Operator{}
+	deploy := &deployv1alpha1.Operator{}
 	deploy.Name = request.Name
 	deploy.Namespace = request.Namespace
 
@@ -129,27 +129,27 @@ func TestDiscoverer(t *testing.T) {
 	}()
 
 	// disable deployable container and assembler container to focus on discoverer
-	deploy := &toolsv1alpha1.Operator{
+	deploy := &deployv1alpha1.Operator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      request.Name,
 			Namespace: request.Namespace,
 		},
-		Spec: toolsv1alpha1.OperatorSpec{
-			CoreSpec: &toolsv1alpha1.CoreSpec{
-				DeployableOperatorSpec: &toolsv1alpha1.DeployableOperatorSpec{
-					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+		Spec: deployv1alpha1.OperatorSpec{
+			CoreSpec: &deployv1alpha1.CoreSpec{
+				DeployableOperatorSpec: &deployv1alpha1.DeployableOperatorSpec{
+					GenericContainerSpec: deployv1alpha1.GenericContainerSpec{
 						Enabled: &falsevalue,
 					},
 				},
 			},
-			ToolsSpec: &toolsv1alpha1.ToolsSpec{
-				ApplicationAssemblerSpec: &toolsv1alpha1.ApplicationAssemblerSpec{
-					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+			ToolsSpec: &deployv1alpha1.ToolsSpec{
+				ApplicationAssemblerSpec: &deployv1alpha1.ApplicationAssemblerSpec{
+					GenericContainerSpec: deployv1alpha1.GenericContainerSpec{
 						Enabled: &falsevalue,
 					},
 				},
-				ResourceDiscovererSpec: &toolsv1alpha1.ResourceDiscovererSpec{
-					GenericContainerSpec: toolsv1alpha1.GenericContainerSpec{
+				ResourceDiscovererSpec: &deployv1alpha1.ResourceDiscovererSpec{
+					GenericContainerSpec: deployv1alpha1.GenericContainerSpec{
 						Enabled: &truevalue,
 					},
 				},

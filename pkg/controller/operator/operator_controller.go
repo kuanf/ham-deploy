@@ -18,7 +18,7 @@ import (
 	"context"
 	"reflect"
 
-	toolsv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/tools/v1alpha1"
+	deployv1alpha1 "github.com/hybridapp-io/ham-deploy/pkg/apis/deploy/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -40,8 +40,8 @@ import (
 const (
 	crdRootPath          = "/usr/local/etc/hybridapp/crds/"
 	crdDeployableSubPath = "core/deployable"
-	crdAssemblerSubPath  = "tools/assembler"
-	crdDiscovererSubPath = "tools/discoverer"
+	crdAssemblerSubPath  = "deploy/assembler"
+	crdDiscovererSubPath = "deploy/discoverer"
 )
 
 /**
@@ -69,7 +69,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Operator
-	err = c.Watch(&source.Kind{Type: &toolsv1alpha1.Operator{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &deployv1alpha1.Operator{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to secondary resource Pods and requeue the owner Operator
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &toolsv1alpha1.Operator{},
+		OwnerType:    &deployv1alpha1.Operator{},
 	})
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (r *ReconcileOperator) Reconcile(request reconcile.Request) (reconcile.Resu
 	klog.Info("Reconciling Operator: ", request)
 
 	// Fetch the Operator instance
-	instance := &toolsv1alpha1.Operator{}
+	instance := &deployv1alpha1.Operator{}
 
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
@@ -163,7 +163,7 @@ func (r *ReconcileOperator) Reconcile(request reconcile.Request) (reconcile.Resu
 	return reconcile.Result{}, err
 }
 
-func (r *ReconcileOperator) createBasicPod(cr *toolsv1alpha1.Operator) *corev1.Pod {
+func (r *ReconcileOperator) createBasicPod(cr *deployv1alpha1.Operator) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name + "-pod",
@@ -171,7 +171,7 @@ func (r *ReconcileOperator) createBasicPod(cr *toolsv1alpha1.Operator) *corev1.P
 		},
 	}
 
-	pod.Spec.ServiceAccountName = toolsv1alpha1.DefaultPodServiceAccountName
+	pod.Spec.ServiceAccountName = deployv1alpha1.DefaultPodServiceAccountName
 
 	// inherit operator settings if possible
 	opns, err := k8sutil.GetOperatorNamespace()
@@ -185,7 +185,7 @@ func (r *ReconcileOperator) createBasicPod(cr *toolsv1alpha1.Operator) *corev1.P
 	return pod
 }
 
-func (r *ReconcileOperator) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, pod *corev1.Pod) *corev1.Pod {
+func (r *ReconcileOperator) configPodByCoreSpec(spec *deployv1alpha1.CoreSpec, pod *corev1.Pod) *corev1.Pod {
 	var exists, implied bool
 
 	// add deployable container unless spec.CoreSpec.DeployableOperatorSpec.Enabled = false
@@ -193,12 +193,12 @@ func (r *ReconcileOperator) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, po
 	implied = spec == nil || spec.DeployableOperatorSpec == nil || spec.DeployableOperatorSpec.Enabled == nil
 
 	if implied || *(spec.DeployableOperatorSpec.Enabled) {
-		var dospec *toolsv1alpha1.DeployableOperatorSpec
+		var dospec *deployv1alpha1.DeployableOperatorSpec
 
 		if exists {
 			dospec = spec.DeployableOperatorSpec
 		} else {
-			dospec = &toolsv1alpha1.DeployableOperatorSpec{}
+			dospec = &deployv1alpha1.DeployableOperatorSpec{}
 		}
 
 		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateDeployableContainer(dospec, pod))
@@ -207,7 +207,7 @@ func (r *ReconcileOperator) configPodByCoreSpec(spec *toolsv1alpha1.CoreSpec, po
 	return pod
 }
 
-func (r *ReconcileOperator) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, pod *corev1.Pod) *corev1.Pod {
+func (r *ReconcileOperator) configPodByToolsSpec(spec *deployv1alpha1.ToolsSpec, pod *corev1.Pod) *corev1.Pod {
 	var exists, implied bool
 
 	// add assembler container unless spec.ToolsSpec.ApplicationAssemblerSpec.Enabled = false
@@ -215,12 +215,12 @@ func (r *ReconcileOperator) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, 
 	implied = spec == nil || spec.ApplicationAssemblerSpec == nil || spec.ApplicationAssemblerSpec.Enabled == nil
 
 	if implied || *(spec.ApplicationAssemblerSpec.Enabled) {
-		var aaspec *toolsv1alpha1.ApplicationAssemblerSpec
+		var aaspec *deployv1alpha1.ApplicationAssemblerSpec
 
 		if exists {
 			aaspec = spec.ApplicationAssemblerSpec
 		} else {
-			aaspec = &toolsv1alpha1.ApplicationAssemblerSpec{}
+			aaspec = &deployv1alpha1.ApplicationAssemblerSpec{}
 		}
 
 		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateAssemblerContainer(aaspec, pod))
@@ -239,7 +239,7 @@ func (r *ReconcileOperator) configPodByToolsSpec(spec *toolsv1alpha1.ToolsSpec, 
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func (r *ReconcileOperator) newPodForCR(cr *toolsv1alpha1.Operator) *corev1.Pod {
+func (r *ReconcileOperator) newPodForCR(cr *deployv1alpha1.Operator) *corev1.Pod {
 	pod := r.createBasicPod(cr)
 
 	pod = r.configPodByCoreSpec(cr.Spec.CoreSpec, pod)
