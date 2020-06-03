@@ -94,15 +94,35 @@ type ToolsSpec struct {
 	ResourceDiscovererSpec   *ResourceDiscovererSpec   `json:"discoverer,omitempty"`
 }
 
+type LicenseSpec struct {
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors.displayName="Accept terms and conditions"
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors.x-descriptors="urn:alm:descriptor:com.tectonic.ui:booleanSwitch"
+	Accept bool `json:"accept"`
+}
+
 // OperatorSpec defines the desired state of Operator
 type OperatorSpec struct {
-	CoreSpec  *CoreSpec  `json:"core,omitempty"`
-	ToolsSpec *ToolsSpec `json:"tools,omitempty"`
+	LicenseSpec *LicenseSpec `json:"license"`
+	CoreSpec    *CoreSpec    `json:"core,omitempty"`
+	ToolsSpec   *ToolsSpec   `json:"tools,omitempty"`
 }
+
+type Phase string
+
+const (
+	PhaseInstalled Phase = "Installed"
+	PhasePending   Phase = "Pending"
+	PhaseError     Phase = "Error"
+)
 
 // OperatorStatus defines the observed state of Operator
 type OperatorStatus struct {
-	corev1.PodStatus `json:",inline"`
+	// +kubebuilder:validation:Enum=Installed;Pending;Error
+	Phase     Phase             `json:"phase,omitempty"`
+	Reason    string            `json:"reason,omitempty"`
+	Message   string            `json:"message,omitempty"`
+	PodStatus *corev1.PodStatus `json:"podstatus,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
