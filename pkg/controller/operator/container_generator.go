@@ -76,7 +76,7 @@ func (r *ReconcileOperator) generateDeployableContainer(spec *deployv1alpha1.Dep
 	}
 
 	// install crds for deployable operator if missing
-	_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdDeployableSubPath)
+	_ = utils.CheckAndInstallCRDs(r.dynamicClient, crdRootPath+crdDeployableSubPath)
 
 	ctn = r.configContainerByGenericSpec(&spec.GenericContainerSpec, ctn)
 
@@ -102,7 +102,7 @@ func (r *ReconcileOperator) generateAssemblerContainer(spec *deployv1alpha1.Appl
 	}
 
 	// install crds for deployable operator if missing
-	_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdAssemblerSubPath)
+	_ = utils.CheckAndInstallCRDs(r.dynamicClient, crdRootPath+crdAssemblerSubPath)
 
 	ctn = r.configContainerByGenericSpec(&spec.GenericContainerSpec, ctn)
 
@@ -142,7 +142,7 @@ func (r *ReconcileOperator) generateDiscovererContainer(spec *deployv1alpha1.Res
 	}
 
 	// install crds for deployable operator if missing
-	_ = utils.CheckAndInstallCRDs(r.client, crdRootPath+crdDiscovererSubPath)
+	_ = utils.CheckAndInstallCRDs(r.dynamicClient, crdRootPath+crdDiscovererSubPath)
 
 	// apply new values from cr if not nil
 	ctn = r.configContainerByGenericSpec(&spec.GenericContainerSpec, ctn)

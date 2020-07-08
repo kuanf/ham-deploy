@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,7 +58,9 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileOperator{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	reconciler := &ReconcileOperator{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	reconciler.dynamicClient = dynamic.NewForConfigOrDie(mgr.GetConfig())
+	return reconciler
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -93,8 +96,9 @@ var _ reconcile.Reconciler = &ReconcileOperator{}
 type ReconcileOperator struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	dynamicClient dynamic.Interface
+	client        client.Client
+	scheme        *runtime.Scheme
 }
 
 // Reconcile reads that state of the cluster for a Operator object and makes changes based on the state read
@@ -263,7 +267,7 @@ func (r *ReconcileOperator) configPodByToolsSpec(spec *deployv1alpha1.ToolsSpec,
 		pod.Spec.Containers = append(pod.Spec.Containers, *r.generateAssemblerContainer(aaspec, pod))
 	}
 
-	// add discoverer container only if spec.ToolsSpec.ResourceDiscovererSpec.Enabled = true
+	// add discoverer container only if spec.ToolsSpec.ResourceDiscovererSpec.Enabled =
 	exists = spec != nil && spec.ResourceDiscovererSpec != nil && spec.ResourceDiscovererSpec.Enabled != nil
 
 	if exists && *(spec.ResourceDiscovererSpec.Enabled) {
@@ -347,14 +351,6 @@ func isEqualContainer(oldctn, newctn *corev1.Container) bool {
 	}
 
 	if oldctn.Image != newctn.Image {
-		return false
-	}
-
-	if !reflect.DeepEqual(oldctn.ImagePullPolicy, newctn.ImagePullPolicy) {
-		return false
-	}
-
-	if !reflect.DeepEqual(oldctn.Resources, newctn.Resources) {
 		return false
 	}
 
