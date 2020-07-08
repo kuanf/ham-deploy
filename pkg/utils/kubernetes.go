@@ -15,17 +15,16 @@
 package utils
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	crdv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 )
 
@@ -33,10 +32,11 @@ const (
 	packageDetailLogLevel = 5
 )
 
-func CheckAndInstallCRDs(client client.Client, pathname string) error {
+func CheckAndInstallCRDs(dcli dynamic.Interface, pathname string) error {
+
 	err := filepath.Walk(pathname, func(path string, info os.FileInfo, err error) error {
 		klog.V(packageDetailLogLevel).Info("Working on ", path)
-		if info != nil && !info.IsDir() && CheckAndInstallCRD(client, path) != nil {
+		if info != nil && !info.IsDir() && CheckAndInstallCRD(dcli, path) != nil {
 			return err
 		}
 		return nil
@@ -45,10 +45,10 @@ func CheckAndInstallCRDs(client client.Client, pathname string) error {
 	return err
 }
 
-func CheckAndInstallCRD(client client.Client, pathname string) error {
+func CheckAndInstallCRD(dcli dynamic.Interface, pathname string) error {
 	var err error
 
-	var crdobj *crdv1beta1.CustomResourceDefinition
+	var crdobj *unstructured.Unstructured
 
 	var crddata []byte
 
@@ -64,13 +64,23 @@ func CheckAndInstallCRD(client client.Client, pathname string) error {
 		return err
 	}
 
-	existcrd := &crdv1beta1.CustomResourceDefinition{}
-	err = client.Get(context.TODO(), types.NamespacedName{Name: crdobj.GetName()}, existcrd)
+	if crdobj.GetKind() != "CustomResourceDefinition" {
+		klog.Info("Can not install non-crd: ", crdobj.GetKind())
+		return nil
+	}
+
+	gvr := schema.GroupVersionResource{
+		Resource: "customresourcedefinitions",
+		Group:    crdobj.GetObjectKind().GroupVersionKind().Group,
+		Version:  crdobj.GetObjectKind().GroupVersionKind().Version,
+	}
+
+	_, err = dcli.Resource(gvr).Get(crdobj.GetName(), metav1.GetOptions{})
 
 	if errors.IsNotFound(err) {
 		klog.Info("Installing SIG Application CRD from File: ", pathname)
 		// Install sig app
-		err = client.Create(context.TODO(), crdobj)
+		_, err = dcli.Resource(gvr).Create(crdobj, metav1.CreateOptions{})
 		if err != nil {
 			klog.Error("Creating CRD", err.Error())
 			return err
