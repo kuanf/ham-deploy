@@ -1,0 +1,15 @@
+apiVersion: deploy.hybridapp.io/v1alpha1
+kind: Operator
+metadata:
+  name: hybridapp
+spec:
+  replicas: 2
+  license:
+    accept: true
+  core:
+    deployable:
+      enabled: true
+      imagePullPolicy: Always
+  tools:
+    assembler:
+      enabled: false
